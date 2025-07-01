@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\DoctorProfileController;
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -27,10 +28,13 @@ Route::middleware('auth:api')->group(function () {
  //-------------------------Appointment---------------------------------------
 
    Route::post('/appointments', [AppointmentController::class, 'store']);
+    Route::put('/appointments/{id}', [AppointmentController::class, 'update']);
+    Route::delete('/appointments/{id}', [AppointmentController::class, 'destroy']);
 
+//------------------------Doctor Profile---------------------------------------
 
-
-
+Route::post('/doctor-profile', [DoctorProfileController::class, 'store']); 
+ Route::get('/doctor-profile', [DoctorProfileController::class, 'show']);
 
 
 });

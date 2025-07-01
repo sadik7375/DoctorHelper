@@ -22,7 +22,6 @@ return new class extends Migration
     $table->boolean('is_paid')->default(true);
     $table->timestamp('paid_at')->nullable();
     $table->timestamps();
-
     $table->foreign('appointment_id')->references('id')->on('appointments')->onDelete('cascade');
 });
 
