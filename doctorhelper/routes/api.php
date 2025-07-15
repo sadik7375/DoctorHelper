@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\Drug\DrugStrengthController;
 use App\Http\Controllers\Api\Drug\DrugDoseController;
 use App\Http\Controllers\Api\Drug\DrugDurationController;
 use App\Http\Controllers\Api\Drug\DrugAdviceController;
+use App\Http\Controllers\Api\ClinicalDiagnosisController;
+use App\Http\Controllers\Api\DiagnosisTestController;
+use App\Http\Controllers\Api\PrescriptionController;
 
 
 Route::post('register', [AuthController::class, 'register']);
@@ -84,6 +87,31 @@ Route::post('/drug-advices', [DrugAdviceController::class, 'store']);
 Route::put('/drug-advices/{id}', [DrugAdviceController::class, 'update']);
 Route::delete('/drug-advices/{id}', [DrugAdviceController::class, 'destroy']);
 
+//----------------------------Clinical diagnoses-----------------------------------------
+
+
+
+Route::get('/clinical-diagnoses', [ClinicalDiagnosisController::class, 'index']);
+Route::post('/clinical-diagnoses', [ClinicalDiagnosisController::class, 'store']);
+Route::put('/clinical-diagnoses/{id}', [ClinicalDiagnosisController::class, 'update']);
+Route::delete('/clinical-diagnoses/{id}', [ClinicalDiagnosisController::class, 'destroy']);
+
+
+//-----------------------------Diagnosis Tests----------------------------------------------
+
+
+
+
+Route::get('/diagnosis-tests', [DiagnosisTestController::class, 'index']);
+Route::post('/diagnosis-tests', [DiagnosisTestController::class, 'store']);
+Route::put('/diagnosis-tests/{id}', [DiagnosisTestController::class, 'update']);
+Route::delete('/diagnosis-tests/{id}', [DiagnosisTestController::class, 'destroy']);
+
+
+//-------------------------------Prescription-------------------------------------------------
+
+Route::post('/prescriptions', [PrescriptionController::class, 'store']);
+
 
 
 });
@@ -101,3 +129,7 @@ Route::get('/', function () {
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+
+
+
