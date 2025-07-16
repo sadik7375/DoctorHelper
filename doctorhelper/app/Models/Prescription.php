@@ -2,29 +2,41 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Prescription extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'doctor_id',
         'patient_id',
-        'drug_id',
-        'drug_strength_id',
-        'drug_dose_id',
-        'drug_duration_id',
-        'drug_advice_id',
-        'clinical_diagnosis_id',
-        'diagnosis_test_id',
-        'advice',
-        'follow_up_value',
-        'follow_up_unit',
-        'next_follow_up',
+        'advice_id',
+        'next_follow_up_count',
+        'next_follow_up_unit',
+        'notes',
     ];
 
-    public function patient()
+    public function drugs()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->hasMany(PrescriptionDrug::class);
+    }
+
+    public function clinicalDiagnoses()
+    {
+        return $this->belongsToMany(
+            ClinicalDiagnosis::class,
+            'prescription_clinical_diagnoses' // ✅ FIXED HERE
+        );
+    }
+
+    public function diagnosisTests()
+    {
+        return $this->belongsToMany(
+            DiagnosisTest::class,
+            'prescription_diagnosis_tests'
+        );
     }
 
     public function doctor()
@@ -32,38 +44,13 @@ class Prescription extends Model
         return $this->belongsTo(User::class, 'doctor_id');
     }
 
-    public function drug()
+    public function patient()
     {
-        return $this->belongsTo(Drug::class);
+        return $this->belongsTo(Patient::class);
     }
 
-    public function strength()
+    public function advice()
     {
-        return $this->belongsTo(DrugStrength::class, 'drug_strength_id');
-    }
-
-    public function dose()
-    {
-        return $this->belongsTo(DrugDose::class, 'drug_dose_id');
-    }
-
-    public function duration()
-    {
-        return $this->belongsTo(DrugDuration::class, 'drug_duration_id');
-    }
-
-    public function adviceType()
-    {
-        return $this->belongsTo(DrugAdvice::class, 'drug_advice_id');
-    }
-
-    public function clinicalDiagnosis()
-    {
-        return $this->belongsTo(ClinicalDiagnosis::class);
-    }
-
-    public function diagnosisTest()
-    {
-        return $this->belongsTo(DiagnosisTest::class);
+        return $this->belongsTo(DrugAdvice::class, 'advice_id');
     }
 }
