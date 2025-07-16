@@ -15,6 +15,8 @@ return new class extends Migration
         $table->id();
         $table->unsignedBigInteger('doctor_id');
         $table->unsignedBigInteger('patient_id');
+        $table->foreignId('advice_id')->nullable()->constrained('drug_advices')->onDelete('cascade');
+
         $table->unsignedInteger('next_follow_up_count')->nullable();
         $table->enum('next_follow_up_unit', ['days', 'weeks', 'months', 'years'])->nullable();
         $table->timestamps();
