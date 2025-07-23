@@ -9,10 +9,10 @@ class Prescription extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+  protected $fillable = [
         'doctor_id',
         'patient_id',
-        'advice_id',
+        'advice', // changed from 'drug_advice_id'
         'next_follow_up_count',
         'next_follow_up_unit',
         'notes',
@@ -49,8 +49,5 @@ class Prescription extends Model
         return $this->belongsTo(Patient::class);
     }
 
-    public function advice()
-    {
-        return $this->belongsTo(DrugAdvice::class, 'advice_id');
-    }
+  
 }
