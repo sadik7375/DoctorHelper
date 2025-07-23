@@ -15,7 +15,7 @@ class PrescriptionDrug extends Model
         'drug_strength_id',
         'drug_dose_id',
         'drug_duration_id',
-        'drug_advice_id',
+        'advice_id',
         'note'
     ];
 
