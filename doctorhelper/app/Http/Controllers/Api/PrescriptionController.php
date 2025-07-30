@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use App\Http\Requests\StorePrescriptionRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,95 +14,66 @@ use App\Models\PrescriptionDiagnosisTest;
 
 class PrescriptionController extends Controller
 {
-    public function store(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'patient_id' => 'required|exists:patients,id',
-                'advice' => 'nullable|string', // advice is now plain text
-                'next_follow_up_count' => 'nullable|integer|min:1',
-                'next_follow_up_unit' => 'nullable|in:days,weeks,months,years',
-                'notes' => 'nullable|string',
+   public function store(StorePrescriptionRequest $request)
+{
+    try {
+        DB::beginTransaction();
 
-                'clinical_diagnosis_ids' => 'required|array',
-                'clinical_diagnosis_ids.*' => 'exists:clinical_diagnoses,id',
+        $doctorId = auth()->id();
 
-                'diagnosis_test_ids' => 'required|array',
-                'diagnosis_test_ids.*' => 'exists:diagnosis_tests,id',
+        $prescription = Prescription::create([
+            'doctor_id' => $doctorId,
+            'patient_id' => $request->patient_id,
+            'advice' => $request->advice,
+            'next_follow_up_count' => $request->next_follow_up_count,
+            'next_follow_up_unit' => $request->next_follow_up_unit,
+            'notes' => $request->notes
+        ]);
 
-                'drugs' => 'required|array|min:1',
-                'drugs.*.drug_id' => 'required|exists:drugs,id',
-                'drugs.*.drug_strength_id' => 'required|exists:drug_strengths,id',
-                'drugs.*.drug_dose_id' => 'required|exists:drug_doses,id',
-                'drugs.*.drug_duration_id' => 'required|exists:drug_durations,id',
-                'drugs.*.drug_advice_id' => 'nullable|exists:drug_advices,id',
-                'drugs.*.note' => 'nullable|string'
+        foreach ($request->clinical_diagnosis_ids as $diagnosisId) {
+            PrescriptionClinicalDiagnosis::create([
+                'prescription_id' => $prescription->id,
+                'clinical_diagnosis_id' => $diagnosisId,
             ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'validation_error',
-                'errors' => $e->errors()
-            ], 422);
         }
 
-        try {
-            DB::beginTransaction();
-
-            $doctorId = auth()->id();
-
-            $prescription = Prescription::create([
-                'doctor_id' => $doctorId,
-                'patient_id' => $request->patient_id,
-                'advice' => $request->advice,
-                'next_follow_up_count' => $request->next_follow_up_count,
-                'next_follow_up_unit' => $request->next_follow_up_unit,
-                'notes' => $request->notes
+        foreach ($request->diagnosis_test_ids as $testId) {
+            PrescriptionDiagnosisTest::create([
+                'prescription_id' => $prescription->id,
+                'diagnosis_test_id' => $testId,
             ]);
-
-            foreach ($request->clinical_diagnosis_ids as $diagnosisId) {
-                PrescriptionClinicalDiagnosis::create([
-                    'prescription_id' => $prescription->id,
-                    'clinical_diagnosis_id' => $diagnosisId,
-                ]);
-            }
-
-            foreach ($request->diagnosis_test_ids as $testId) {
-                PrescriptionDiagnosisTest::create([
-                    'prescription_id' => $prescription->id,
-                    'diagnosis_test_id' => $testId,
-                ]);
-            }
-
-            foreach ($request->drugs as $drug) {
-                PrescriptionDrug::create([
-                    'prescription_id' => $prescription->id,
-                    'drug_id' => $drug['drug_id'],
-                    'drug_strength_id' => $drug['drug_strength_id'],
-                    'drug_dose_id' => $drug['drug_dose_id'],
-                    'drug_duration_id' => $drug['drug_duration_id'],
-                    'drug_advice_id' => $drug['drug_advice_id'] ?? null,
-                    'note' => $drug['note'] ?? null,
-                ]);
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Prescription created successfully',
-                'data' => $prescription->load(['drugs', 'clinicalDiagnoses', 'diagnosisTests'])
-            ], 201);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Prescription store failed: ' . $e->getMessage());
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong',
-                'error' => config('app.debug') ? $e->getMessage() : 'Server error',
-            ], 500);
         }
+
+        foreach ($request->drugs as $drug) {
+            PrescriptionDrug::create([
+                'prescription_id' => $prescription->id,
+                'drug_id' => $drug['drug_id'],
+                'drug_strength_id' => $drug['drug_strength_id'],
+                'drug_dose_id' => $drug['drug_dose_id'],
+                'drug_duration_id' => $drug['drug_duration_id'],
+                'drug_advice_id' => $drug['drug_advice_id'] ?? null,
+                'note' => $drug['note'] ?? null,
+            ]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Prescription created successfully',
+            'data' => $prescription->load(['drugs', 'clinicalDiagnoses', 'diagnosisTests'])
+        ], 201);
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        Log::error('Prescription store failed: ' . $e->getMessage());
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Something went wrong',
+            'error' => config('app.debug') ? $e->getMessage() : 'Server error',
+        ], 500);
     }
+}
 
     public function show($id)
     {
