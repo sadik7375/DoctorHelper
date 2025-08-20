@@ -31,6 +31,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/patients', [PatientController::class, 'index']);
     Route::post('/patients', [PatientController::class, 'store']);
     Route::put('/patients/{id}', [PatientController::class, 'update']);
+    Route::get('/patients/{id}', [PatientController::class, 'show']);
+
     Route::delete('/patients/{id}', [PatientController::class, 'destroy']);
 
 

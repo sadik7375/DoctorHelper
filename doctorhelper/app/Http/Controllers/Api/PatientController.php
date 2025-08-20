@@ -119,6 +119,18 @@ class PatientController extends Controller
     return response()->json(['status' => 'success', 'message' => 'Patient updated successfully.', 'data' => $patient]);
 }
 
+
+
+public function show($id)
+{
+    $patient = Patient::findOrFail($id);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $patient,
+    ]);
+}
+
 public function destroy($id)
 {
     $doctorId = $this->getDoctorId();
