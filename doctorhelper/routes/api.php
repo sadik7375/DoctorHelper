@@ -42,6 +42,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/appointments/{id}', [AppointmentController::class, 'update']);
     Route::delete('/appointments/{id}', [AppointmentController::class, 'destroy']);
     Route::get('/printslip/{id}', [AppointmentController::class, 'printSlipJson']);
+    Route::get('/patients/search', [PatientController::class, 'search']);
 
 //------------------------Doctor Profile---------------------------------------
 

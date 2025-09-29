@@ -4,75 +4,65 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\AppointmentPayment;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 class AppointmentController extends Controller
 {
-    public function store(Request $request)
-    {
-        $request->validate([
-            'doctor_id' => 'required|exists:users,id',
-            'patient_id' => 'required|exists:patients,id',
-            'appointment_date' => 'required|date',
-            'appointment_time' => 'required',
-            'fee' => 'required|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
-            'discount_reason' => 'nullable|string|max:255',
-            'payment_method' => 'required|in:cash,card,bkash,rocket,nagad',
-        ]);
+   public function store(StoreAppointmentRequest $request): JsonResponse
+{
+    $data = $request->validated();
 
-        try {
-            DB::beginTransaction();
-
-            $doctorId = auth()->user()->role === 'staff'
-                ? auth()->user()->doctor_id
-                : auth()->id();
-
+    try {
+        $appointment = DB::transaction(function () use ($data) {
             $appointment = Appointment::create([
-                'doctor_id' => $doctorId,
-                'patient_id' => $request->patient_id,
-                'staff_id' => auth()->id(),
-                'appointment_date' => $request->appointment_date,
-                'appointment_time' => $request->appointment_time,
-                'status' => 'confirmed',
-                'notes' => $request->notes,
+                'doctor_id'        => $data['doctor_id'], // ← comes from backend injection
+                'patient_id'       => $data['patient_id'],
+                'staff_id'         => auth()->id(),
+                'appointment_date' => $data['appointment_date'],
+                'appointment_time' => $data['appointment_time'],
+                'status'           => 'confirmed',
+                'notes'            => $data['notes'] ?? null,
             ]);
 
-            $discount = $request->discount ?? 0;
-            $finalAmount = $request->fee - $discount;
+            $fee         = (float) $data['fee'];
+            $discount    = (float) ($data['discount'] ?? 0);
+            $finalAmount = max(0, $fee - $discount);
 
             AppointmentPayment::create([
-                'appointment_id' => $appointment->id,
-                'fee' => $request->fee,
-                'discount' => $discount,
-                'discount_reason' => $request->discount_reason,
-                'final_amount' => $finalAmount,
-                'payment_method' => $request->payment_method,
-                'is_paid' => true,
-                'paid_at' => now(),
+                'appointment_id'  => $appointment->id,
+                'fee'             => $fee,
+                'discount'        => $discount,
+                'discount_reason' => $data['discount_reason'] ?? null,
+                'final_amount'    => $finalAmount,
+                'payment_method'  => $data['payment_method'],
+                'is_paid'         => true,
+                'paid_at'         => now(),
             ]);
 
-            DB::commit();
+            return $appointment->load('payment');
+        });
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Appointment and payment saved successfully.',
-                'appointment' => $appointment->load('payment'),
-            ], 201);
-        } catch (\Throwable $e) {
-    \Log::error('Appointment error: ' . $e->getMessage());
-    return response()->json([
-        'status' => 'error',
-      'error' => config('app.debug') ? $e->getMessage() : null,
-    'line' => config('app.debug') ? $e->getLine() : null,
-    'file' => config('app.debug') ? $e->getFile() : null,
-       
-    ], 500);
-}
+        return response()->json([
+            'status'      => 'success',
+            'message'     => 'Appointment and payment saved successfully.',
+            'appointment' => $appointment,
+        ], 201);
+
+    } catch (\Throwable $e) {
+        Log::error('Appointment create error: '.$e->getMessage());
+
+        return response()->json([
+            'status' => 'error',
+            'error'  => config('app.debug') ? $e->getMessage() : null,
+            'line'   => config('app.debug') ? $e->getLine() : null,
+            'file'   => config('app.debug') ? $e->getFile() : null,
+        ], 500);
     }
-
+}
     
 
    public function update(Request $request, $id)
@@ -165,7 +155,25 @@ public function destroy($id)
     }
 }
 
+public function search(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string|min:3'
+        ]);
 
+        $q = $request->get('phone');
+
+        $patients = Patient::query()
+            ->where('phone_number', 'like', "%{$q}%")
+            ->orderBy('name')
+            ->limit(10)
+            ->get(['id','name','email','phone_number','age','gender']);
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $patients
+        ]);
+    }
 
 
 

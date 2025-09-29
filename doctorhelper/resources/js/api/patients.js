@@ -31,3 +31,10 @@ export const deletePatient = (id, token) => {
         headers: { Authorization: `Bearer ${token}` },
     });
 };
+
+
+export const searchPatientsByPhone = (phone, token) =>
+    axios.get(`${BASE_URL}/patients/search`, {
+        params: { phone },
+        headers: { Authorization: `Bearer ${token}` },
+    });

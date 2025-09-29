@@ -12,17 +12,32 @@ class PatientController extends Controller
     /**
      * List all patients for the authenticated doctor or staff.
      */
-    public function index()
-    {
-        $doctorId = $this->getDoctorId();
+   public function index(Request $request)
+{
+    $doctorId = $this->getDoctorId();
 
-        $patients = Patient::where('doctor_id', $doctorId)->latest()->get();
+    $query = Patient::where('doctor_id', $doctorId);
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $patients,
-        ], 200);
+    // If ?search= is provided, filter by phone, name, or email
+    if ($request->filled('search')) {
+        $search = $request->get('search');
+        $digits = preg_replace('/\D+/', '', $search);
+
+        $query->where(function ($q) use ($search, $digits) {
+            $q->where('phone_number', 'like', "%{$search}%")
+              ->orWhere('phone_number', 'like', "%{$digits}%")
+              ->orWhere('name', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+        });
     }
+
+    $patients = $query->latest()->get();
+
+    return response()->json([
+        'status' => 'success',
+        'data'   => $patients,
+    ], 200);
+}
 
     /**
      * Store a new patient with unique email & phone per doctor.
@@ -145,6 +160,31 @@ public function destroy($id)
 
     return response()->json(['status' => 'success', 'message' => 'Patient deleted successfully.']);
 }
+
+// public function search(Request $request)
+//     {
+//         $request->validate([
+//             'phone' => 'required|string|min:3'
+//         ]);
+
+//         $q = $request->get('phone');
+
+//         $patients = Patient::query()
+//             ->where('phone_number', 'like', "%{$q}%")
+//             ->orderBy('name')
+//             ->limit(10)
+//             ->get(['id','name','email','phone_number','age','gender']);
+
+//         return response()->json([
+//             'status' => 'success',
+//             'data'   => $patients
+//         ]);
+//     }
+
+
+
+
+
 
     /**
      * Get the actual doctor_id whether logged in user is doctor or staff.

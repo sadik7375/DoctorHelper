@@ -32,6 +32,8 @@ Route::get('/register', function () {
 
 
 
+
+
 Route::get('/patients/create', function () {
     return Inertia::render('Patients/Create');
 });
@@ -44,3 +46,8 @@ Route::get('/patients/all', function () {
    Route::get('/patients/{id}/edit', function ($id) {
         return Inertia::render('Patients/Edit', ['id' => $id]);
     })->name('patients.edit');
+
+
+       Route::get('/appointments/create', function () {
+        return Inertia::render('Appointments/Create'); // Create appointment page
+    })->name('appointments.create');
